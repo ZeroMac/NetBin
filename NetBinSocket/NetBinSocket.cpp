@@ -1,10 +1,15 @@
 ﻿// NetBinSocket.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
 //
-
+#include<future>
+#include<thread>
+#include<vector>
 #include <iostream>
 #include<winsock.h>
 #pragma comment(lib,"ws2_32.lib")
+//using namespace std;
 void initialization();
+int const SocketMaxSize = 5;
+std::vector<SOCKET> v;
 int main()
 {
     initialization();
@@ -38,14 +43,35 @@ int main()
 	}
 	std::cout << "服务端正在监听连接，请稍候...." << std::endl;
 	//接受连接请求
-	len = sizeof(SOCKADDR);
-	s_accept = accept(s_server, (SOCKADDR*)&accept_addr, &len);
-	if (s_accept == SOCKET_ERROR) {
+	
+	auto w = std::async(std::launch::async, [&] {
+		while (true)
+		{
+			if (v.size() < ::SocketMaxSize)
+			{
+				for (int i = v.size(); i < ::SocketMaxSize; i++)
+				{
+					len = sizeof(SOCKADDR);
+					s_accept = accept(s_server, (SOCKADDR*)&accept_addr, &len);
+					if (s_accept!=SOCKET_ERROR)
+					{
+						v.push_back(s_accept);
+						std::cout<< inet_ntoa(accept_addr.sin_addr)
+							<< "已经连接上\r\n"<<std::endl;
+					}
+					std::cout << "连接建立，准备接受数据" << std::endl;
+				}
+			}
+		}
+	});
+	
+	
+	/*if (s_accept == SOCKET_ERROR) {
 		std::cout << "连接失败！" << std::endl;
 		WSACleanup();
 		return 0;
-	}
-	std::cout << "连接建立，准备接受数据" << std::endl;
+	}*/
+	
 	while (1) {
 		recv_len = recv(s_accept, recv_buf, 100, 0);
 		if (recv_len < 0) {
