@@ -2,10 +2,22 @@
 //
 
 #include <iostream>
-
+#include "../include/cinatra.hpp"
+using namespace cinatra;
+using namespace std;
 int main()
 {
-    std::cout << "Hello World!\n";
+	http_server server(std::thread::hardware_concurrency());
+	bool r = server.listen("0.0.0.0", "8090");
+	if (!r) {
+		//LOG_INFO << "listen failed";
+		return -1;
+	}
+	server.set_http_handler<GET, POST>("/", [](request& req, response& res) mutable {
+		res.set_status_and_content(status_type::ok, "hello world"); 
+	});
+	server.run();
+    std::wcout << "Cinatra Server 启动!\n";
 }
 
 // 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单
