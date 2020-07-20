@@ -1,8 +1,12 @@
 ﻿// NetBin.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
 //
-
+#define ORMPP_ENABLE_MYSQL
+#define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include "../include/cinatra.hpp"
+
+
 
 #include <boost/filesystem/path.hpp> 
 #include <boost/filesystem/operations.hpp>
@@ -12,9 +16,56 @@
 using namespace cinatra;
 using namespace std;
 using namespace boost;
+#include "../include/ormpp/dbng.hpp"
+#include "../include/ormpp/mysql.hpp"
+using namespace ormpp;
+struct person
+{
+	int id;
+	std::string name;
+	int age;
+};
+REFLECTION(person, id, name, age);
+//#include <mysql/mysql.h>
+
 
 int main()
 {
+	person p = { 1, "test1", 2 };
+	person p1 = { 2, "test2", 3 };
+	person p2 = { 3, "test3", 4 };
+	std::vector<person> v{ p1, p2 };
+
+	dbng<mysql> mysql;
+	mysql.connect("127.0.0.1", "root", "hlpassword", "hlsoft");
+	//mysql.create_datatable<person>();
+
+	mysql.insert(p);
+	mysql.insert(v);
+
+	mysql.update(p);
+	mysql.update(v);
+
+	auto result = mysql.query<person>(); //vector<person>
+	for (auto& person : result) {
+		std::cout << person.id << " " << person.name << " " << person.age << std::endl;
+	}
+
+	mysql.delete_records<person>();
+
+	//transaction
+	mysql.begin();
+	for (int i = 0; i < 10; ++i) {
+		person s = { i, "tom", 19 };
+		if (!mysql.insert(s)) {
+			mysql.rollback();
+			return -1;
+		}
+	}
+	mysql.commit();
+
+
+
 	//exe 当前路径
 	std::wstring exePath = boost::filesystem::initial_path<boost::filesystem::path>().wstring();
 	std::wcout << exePath << endl;
